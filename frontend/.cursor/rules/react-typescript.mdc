@@ -1,0 +1,50 @@
+---
+description: React 19 and TypeScript component patterns
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# React & TypeScript Patterns
+
+## Component Structure
+
+```typescript
+// ✅ GOOD - Functional component with proper typing
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+}
+
+export const Button: React.FC<ButtonProps> = ({ label, onClick, variant = 'primary' }) => {
+  return <button onClick={onClick}>{label}</button>;
+};
+
+// ❌ BAD - No proper types
+export const Button = ({ label, onClick }) => {
+  return <button onClick={onClick}>{label}</button>;
+};
+```
+
+## Hooks Usage
+
+- Use `React.FC` or explicit return types for components
+- Extract custom hooks for reusable logic (prefix with `use`)
+- Prefer `const` arrow functions for components
+- Use React 19 features: `use()` hook, Server Components when applicable
+
+## Import Order
+
+1. React imports
+2. Third-party libraries
+3. Local components
+4. Utilities and hooks
+5. Types/Interfaces
+6. Styles
+
+## Export Pattern
+
+```typescript
+// Export at bottom of file
+export { ComponentName };
+```

@@ -1,0 +1,410 @@
+---
+description: React clean code patterns for new and shared components
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# Component Patterns & Clean Code
+
+## 1. Component Structure (Single Responsibility)
+
+```typescript
+// ✅ GOOD - Single responsibility, composable
+interface UserCardProps {
+  user: User;
+  onEdit?: () => void;
+}
+
+export const UserCard: React.FC<UserCardProps> = ({ user, onEdit }) => {
+  return (
+    <Card>
+      <UserAvatar src={user.avatar} alt={user.name} />
+      <UserInfo name={user.name} email={user.email} />
+      {onEdit && <EditButton onClick={onEdit} />}
+    </Card>
+  );
+};
+
+// ❌ BAD - Too many responsibilities
+export const UserCard = ({ user }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [userData, setUserData] = useState(user);
+  const { mutate } = useMutation(UPDATE_USER);
+  
+  // Mixing UI, state management, and API logic
+  const handleSubmit = async () => {
+    await mutate({ variables: { ...userData } });
+    setIsEditing(false);
+  };
+  
+  return (
+    <div>
+      {/* Complex nested logic */}
+    </div>
+  );
+};
+```
+
+## 2. Props Interface Design
+
+```typescript
+// ✅ GOOD - Clear, explicit props
+interface ButtonProps {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  className?: string;
+}
+
+// ❌ BAD - Unclear, using any
+interface ButtonProps {
+  data: any;
+  config?: object;
+  handler?: Function;
+}
+
+// ✅ GOOD - Extend native HTML props when needed
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+}
+```
+
+## 3. Composition Over Props Drilling
+
+```typescript
+// ✅ GOOD - Composition pattern
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const Card: React.FC<CardProps> = ({ children, className }) => (
+  <div className={cn('rounded-lg border bg-card', className)}>
+    {children}
+  </div>
+);
+
+export const CardHeader: React.FC<CardProps> = ({ children, className }) => (
+  <div className={cn('flex flex-col space-y-1.5 p-6', className)}>
+    {children}
+  </div>
+);
+
+// Usage
+<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+  </CardHeader>
+  <CardContent>Content</CardContent>
+</Card>
+
+// ❌ BAD - Too many specific props
+<Card 
+  title="Title" 
+  content="Content" 
+  footer="Footer" 
+  showHeader={true}
+  headerStyle={{}}
+/>
+```
+
+## 4. Custom Hooks for Logic Extraction
+
+```typescript
+// ✅ GOOD - Extract complex logic to custom hooks
+const useUserData = (userId: string) => {
+  const { data, loading, error } = useQuery(GET_USER, {
+    variables: { userId }
+  });
+  
+  const formattedUser = useMemo(() => {
+    if (!data?.user) return null;
+    return {
+      ...data.user,
+      fullName: `${data.user.firstName} ${data.user.lastName}`
+    };
+  }, [data]);
+  
+  return { user: formattedUser, loading, error };
+};
+
+// Component stays clean
+export const UserProfile: React.FC<{ userId: string }> = ({ userId }) => {
+  const { user, loading, error } = useUserData(userId);
+  
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMessage error={error} />;
+  if (!user) return <NotFound />;
+  
+  return <UserCard user={user} />;
+};
+```
+
+## 5. Early Returns for Cleaner Code
+
+```typescript
+// ✅ GOOD - Early returns, flat structure
+export const UserList: React.FC<UserListProps> = ({ users }) => {
+  if (users.length === 0) {
+    return <EmptyState message="No users found" />;
+  }
+  
+  if (users.length > 100) {
+    return <VirtualizedList items={users} />;
+  }
+  
+  return (
+    <ul>
+      {users.map(user => <UserItem key={user.id} user={user} />)}
+    </ul>
+  );
+};
+
+// ❌ BAD - Nested ternaries and conditions
+export const UserList = ({ users }) => {
+  return (
+    <div>
+      {users.length === 0 ? (
+        <EmptyState />
+      ) : users.length > 100 ? (
+        <VirtualizedList items={users} />
+      ) : (
+        <ul>
+          {users.map(user => (
+            user.isActive ? (
+              <ActiveUser user={user} />
+            ) : (
+              <InactiveUser user={user} />
+            )
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+```
+
+## 6. Shared Components Best Practices
+
+```typescript
+// ✅ GOOD - Flexible, reusable shared component
+interface DataTableProps<T> {
+  data: T[];
+  columns: Column<T>[];
+  onRowClick?: (row: T) => void;
+  isLoading?: boolean;
+  emptyMessage?: string;
+  className?: string;
+}
+
+export const DataTable = <T,>({ 
+  data, 
+  columns, 
+  onRowClick,
+  isLoading = false,
+  emptyMessage = 'No data available',
+  className 
+}: DataTableProps<T>) => {
+  if (isLoading) return <TableSkeleton />;
+  if (data.length === 0) return <EmptyState message={emptyMessage} />;
+  
+  return (
+    <Table className={className}>
+      {/* Implementation */}
+    </Table>
+  );
+};
+
+// Usage with any data type
+<DataTable<User>
+  data={users}
+  columns={userColumns}
+  onRowClick={handleUserClick}
+/>
+```
+
+## 7. Avoid Magic Numbers and Strings
+
+```typescript
+// ✅ GOOD - Named constants
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+export const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
+  const handleFile = (file: File) => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File too large');
+      return;
+    }
+    
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast.error('Invalid file type');
+      return;
+    }
+    
+    onUpload(file);
+  };
+  
+  return <input type="file" onChange={e => handleFile(e.target.files?.[0])} />;
+};
+
+// ❌ BAD - Magic numbers
+const handleFile = (file: File) => {
+  if (file.size > 5242880) {
+    toast.error('File too large');
+  }
+};
+```
+
+## 8. Component Documentation
+
+```typescript
+/**
+ * Reusable modal with customizable content.
+ * @example <Modal isOpen={true} onClose={handleClose} title="Title">Content</Modal>
+ */
+interface ModalProps {
+  isOpen: boolean;      // Controls visibility
+  onClose: () => void;  // Close callback
+  title?: string;       // Modal title
+  children: React.ReactNode;
+  className?: string;
+}
+```
+
+## 9. Prop Spreading (Use Carefully)
+
+```typescript
+// ✅ GOOD - Extend native HTML when needed
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  label: string;
+  error?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ label, error, className, ...inputProps }, ref) => (
+    <div>
+      <label>{label}</label>
+      <input ref={ref} className={cn('input', className)} {...inputProps} />
+      {error && <span className="text-destructive">{error}</span>}
+    </div>
+  )
+);
+
+// ❌ BAD - Unclear props
+export const Button = (props: any) => <button {...props} />;
+```
+
+## 10. Testing Support
+
+```typescript
+// Add testId for testing
+interface ComponentProps {
+  testId?: string;
+}
+
+export const Component: React.FC<ComponentProps> = ({ testId }) => (
+  <div data-testid={testId}>Content</div>
+);
+```
+
+## Project-Specific Patterns
+
+### Folder Structure
+
+```typescript
+// Routes folder → Error Boundary
+// If user navigates wrong URL, redirect to dashboard
+// index.ts = all routes export
+
+// Tokens folder → Component of page (page sections)
+
+// Types folder → All TypeScript types (types)
+interface User {
+  id: string;
+  name: string;
+  // ... types
+}
+
+// Constants folder → API endpoints, permissions
+export const ENDPOINTS = {
+  AUTH: '/api/auth',
+  USERS: '/api/users',
+};
+
+export const PERMISSIONS = {
+  VIEW_USERS: 'view:users',
+  EDIT_USERS: 'edit:users',
+};
+```
+
+### Context & State Management
+
+```typescript
+// Context → context-k (API) and Redux store
+// Use Context for API/Authentication state
+// Use Redux for complex client state
+
+// GraphQL → query and mutation in separate files
+// queries.ts
+export const GET_USERS = gql`...`;
+
+// mutations.ts
+export const UPDATE_USER = gql`...`;
+```
+
+### Custom Hooks Pattern
+
+```typescript
+// hooks/ folder → Extract all custom logic
+// use-*.ts naming convention
+
+// Example: use-user-permissions.ts
+export const useUserPermissions = () => {
+  const { user } = useAuth();
+  const hasPermission = (permission: string) => {
+    return user?.permissions?.includes(permission);
+  };
+  return { hasPermission };
+};
+```
+
+### URL Query Management (nuqs)
+
+```typescript
+// Use nuqs for URL query state (filters, search, pagination)
+import { useQueryState } from 'nuqs';
+
+export const UserList = () => {
+  const [search, setSearch] = useQueryState('search');
+  const [page, setPage] = useQueryState('page', { defaultValue: '1' });
+  
+  // URL: /users?search=john&page=2
+};
+```
+
+## Key Principles
+
+1. **Single Responsibility** - One purpose per component
+2. **Composition** - Build with smaller pieces
+3. **Custom Hooks** - Extract logic to hooks
+4. **Type Safety** - Always use TypeScript
+5. **Early Returns** - Flatten conditions
+6. **Named Constants** - No magic values
+7. **Accessibility** - Keyboard & screen readers
+8. **Testability** - Easy to test
+
+## Shared Component Checklist
+
+- [ ] Reusable (3+ places)
+- [ ] Clear props interface
+- [ ] Sensible defaults
+- [ ] Supports `className`
+- [ ] Accessible (ARIA)
+- [ ] TypeScript types exported
+- [ ] Located in `components/shared/`

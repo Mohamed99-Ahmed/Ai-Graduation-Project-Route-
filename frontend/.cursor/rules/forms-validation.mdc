@@ -1,0 +1,51 @@
+---
+description: React Hook Form with Zod validation patterns
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Forms & Validation
+
+## React Hook Form + Zod Pattern
+
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+// ✅ GOOD - Define schema first
+const formSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+export const LoginForm = () => {
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = (data: FormData) => {
+    console.log(data);
+  };
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      <input {...form.register('email')} />
+      {form.formState.errors.email && <span>{form.formState.errors.email.message}</span>}
+    </form>
+  );
+};
+```
+
+## Form Field Pattern
+
+- Use controlled components with `register()`
+- Display validation errors immediately
+- Use `formState.isSubmitting` for loading states
+- Reset form after successful submission

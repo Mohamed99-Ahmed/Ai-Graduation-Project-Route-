@@ -1,0 +1,56 @@
+---
+description: State management with Apollo, React Query, and Redux
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# State Management
+
+## When to Use What
+
+- **Apollo Client**: GraphQL queries, mutations, subscriptions
+- **React Query (@tanstack/react-query)**: REST API calls, server state caching
+- **Redux Toolkit**: Complex global client state, cross-component state
+- **Local State**: Component-specific state (useState, useReducer)
+
+## Apollo Client Pattern
+
+```typescript
+import { useQuery, useMutation } from '@apollo/client';
+
+// ✅ GOOD - Proper error handling and loading states
+const { data, loading, error } = useQuery(GET_USERS);
+
+const [createUser, { loading: creating }] = useMutation(CREATE_USER, {
+  onCompleted: (data) => console.log('Created:', data),
+  onError: (error) => console.error('Error:', error),
+  refetchQueries: ['GetUsers'],
+});
+```
+
+## React Query Pattern
+
+```typescript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+// ✅ GOOD - Proper cache invalidation
+const { data, isLoading } = useQuery({
+  queryKey: ['users'],
+  queryFn: fetchUsers,
+});
+
+const queryClient = useQueryClient();
+const mutation = useMutation({
+  mutationFn: createUser,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  },
+});
+```
+
+## Redux Toolkit Pattern
+
+```typescript
+// Use for global UI state, user preferences, etc.
+// Avoid for server data (use Apollo/React Query instead)
+```

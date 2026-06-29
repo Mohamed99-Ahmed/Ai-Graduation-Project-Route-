@@ -1,0 +1,68 @@
+---
+description: GraphQL queries, mutations, and subscriptions patterns
+globs: **/*.{ts,tsx,graphql,gql}
+alwaysApply: false
+---
+
+# GraphQL Patterns
+
+## Query Organization
+
+```typescript
+// ✅ GOOD - Define queries in separate file or at top
+import { gql } from '@apollo/client';
+
+const GET_USER = gql`
+  query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+      email
+    }
+  }
+`;
+
+// Use in component
+const { data } = useQuery(GET_USER, { variables: { id: userId } });
+```
+
+## Fragments for Reusability
+
+```typescript
+const USER_FIELDS = gql`
+  fragment UserFields on User {
+    id
+    name
+    email
+    avatar
+  }
+`;
+
+const GET_USERS = gql`
+  ${USER_FIELDS}
+  query GetUsers {
+    users {
+      ...UserFields
+    }
+  }
+`;
+```
+
+## File Uploads
+
+```typescript
+import { useMutation } from '@apollo/client';
+
+// apollo-upload-client handles File/Blob automatically
+const [uploadFile] = useMutation(UPLOAD_FILE);
+
+await uploadFile({ variables: { file } });
+```
+
+## WebSocket Subscriptions
+
+```typescript
+const { data, loading } = useSubscription(MESSAGE_SUBSCRIPTION, {
+  variables: { chatId },
+});
+```

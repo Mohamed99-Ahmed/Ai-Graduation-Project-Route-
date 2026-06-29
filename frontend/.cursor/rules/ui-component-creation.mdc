@@ -1,0 +1,406 @@
+---
+description: Creating new UI components following shadcn/ui patterns
+globs: **/components/ui/*.tsx
+alwaysApply: false
+---
+
+# UI Component Creation (shadcn/ui Pattern)
+
+## Standard UI Component Template
+
+```typescript
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+
+// 1. Define variants using CVA
+const componentVariants = cva(
+  // Base classes (always applied)
+  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        outline: 'border border-input bg-background hover:bg-accent',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
+      },
+      size: {
+        default: 'h-10 px-4 py-2',
+        sm: 'h-9 rounded-md px-3',
+        lg: 'h-11 rounded-md px-8',
+        icon: 'h-10 w-10',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  }
+);
+
+// 2. Define Props Interface
+export interface ComponentProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof componentVariants> {
+  asChild?: boolean; // For Radix Slot pattern
+}
+
+// 3. Component Implementation with forwardRef
+const Component = React.forwardRef<HTMLButtonElement, ComponentProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button';
+    
+    return (
+      <Comp
+        className={cn(componentVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+
+Component.displayName = 'Component';
+
+export { Component, componentVariants };
+```
+
+## Radix UI Integration Pattern
+
+```typescript
+import * as RadixDialog from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// Wrap Radix primitives with your styling
+
+const Dialog = RadixDialog.Root;
+const DialogTrigger = RadixDialog.Trigger;
+const DialogPortal = RadixDialog.Portal;
+
+const DialogOverlay = React.forwardRef<
+  React.ElementRef<typeof RadixDialog.Overlay>,
+  React.ComponentPropsWithoutRef<typeof RadixDialog.Overlay>
+>(({ className, ...props }, ref) => (
+  <RadixDialog.Overlay
+    ref={ref}
+    className={cn(
+      'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out',
+      className
+    )}
+    {...props}
+  />
+));
+DialogOverlay.displayName = RadixDialog.Overlay.displayName;
+
+const DialogContent = React.forwardRef<
+  React.ElementRef<typeof RadixDialog.Content>,
+  React.ComponentPropsWithoutRef<typeof RadixDialog.Content>
+>(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay />
+    <RadixDialog.Content
+      ref={ref}
+      className={cn(
+        'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg',
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <RadixDialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100">
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </RadixDialog.Close>
+    </RadixDialog.Content>
+  </DialogPortal>
+));
+DialogContent.displayName = RadixDialog.Content.displayName;
+
+export { Dialog, DialogTrigger, DialogContent, DialogOverlay };
+```
+
+## Compound Component Pattern
+
+```typescript
+// ✅ GOOD - Compound components for flexibility
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)}
+    {...props}
+  />
+));
+Card.displayName = 'Card';
+
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn('flex flex-col space-y-1.5 p-6', className)}
+    {...props}
+  />
+));
+CardHeader.displayName = 'CardHeader';
+
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn('text-2xl font-semibold leading-none tracking-tight', className)}
+    {...props}
+  />
+));
+CardTitle.displayName = 'CardTitle';
+
+export { Card, CardHeader, CardTitle, CardContent, CardFooter };
+
+// Usage - Flexible composition
+<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+    <CardDescription>Description</CardDescription>
+  </CardHeader>
+  <CardContent>Content goes here</CardContent>
+  <CardFooter>Footer actions</CardFooter>
+</Card>
+```
+
+## Form Component Pattern
+
+```typescript
+import { Slot } from '@radix-ui/react-slot';
+import { Controller, type ControllerProps, type FieldPath, type FieldValues } from 'react-hook-form';
+import { Label } from '@/components/ui/label';
+
+// Form Field Context
+type FormFieldContextValue<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+> = {
+  name: TName;
+};
+
+const FormFieldContext = React.createContext<FormFieldContextValue>(
+  {} as FormFieldContextValue
+);
+
+// Form Field Component
+const FormField = <
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+>({
+  ...props
+}: ControllerProps<TFieldValues, TName>) => {
+  return (
+    <FormFieldContext.Provider value={{ name: props.name }}>
+      <Controller {...props} />
+    </FormFieldContext.Provider>
+  );
+};
+
+// Form Item Component
+const FormItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  return (
+    <div ref={ref} className={cn('space-y-2', className)} {...props} />
+  );
+});
+FormItem.displayName = 'FormItem';
+
+// Usage with react-hook-form
+<FormField
+  control={form.control}
+  name="email"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Email</FormLabel>
+      <FormControl>
+        <Input placeholder="email@example.com" {...field} />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+## Polymorphic Component Pattern
+
+```typescript
+import { Slot } from '@radix-ui/react-slot';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
+  variant?: 'default' | 'outline' | 'ghost';
+}
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ asChild = false, variant = 'default', className, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button';
+    
+    return (
+      <Comp
+        ref={ref}
+        className={cn(buttonVariants({ variant }), className)}
+        {...props}
+      />
+    );
+  }
+);
+
+// Usage - Button as different elements
+<Button>Regular Button</Button>
+<Button asChild>
+  <Link to="/home">Button styled Link</Link>
+</Button>
+<Button asChild>
+  <a href="https://example.com">Button styled anchor</a>
+</Button>
+```
+
+## Animation Patterns (tw-animate-css)
+
+```typescript
+import { cn } from '@/lib/utils';
+
+const AlertDialog = React.forwardRef<
+  React.ElementRef<typeof RadixDialog.Content>,
+  React.ComponentPropsWithoutRef<typeof RadixDialog.Content>
+>(({ className, ...props }, ref) => (
+  <RadixDialog.Content
+    ref={ref}
+    className={cn(
+      'fixed left-[50%] top-[50%] z-50',
+      // Entry animations
+      'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+      // Exit animations
+      'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
+      className
+    )}
+    {...props}
+  />
+));
+```
+
+## Accessibility Checklist for UI Components
+
+```typescript
+// ✅ GOOD - Accessible component
+const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
+  ({ icon: Icon, label, ...props }, ref) => (
+    <button
+      ref={ref}
+      aria-label={label}
+      className="inline-flex items-center justify-center"
+      {...props}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="sr-only">{label}</span>
+    </button>
+  )
+);
+
+// Essential accessibility features:
+// - aria-label for icon-only buttons
+// - sr-only text for screen readers
+// - Keyboard navigation support (focus-visible styles)
+// - Disabled state properly handled
+// - ARIA attributes when needed (aria-expanded, aria-controls, etc.)
+```
+
+## Icon Integration (lucide-react)
+
+```typescript
+import { Check, X, AlertCircle, Info } from 'lucide-react';
+import { cva, type VariantProps } from 'class-variance-authority';
+
+const iconVariants = cva('', {
+  variants: {
+    size: {
+      sm: 'h-3 w-3',
+      default: 'h-4 w-4',
+      lg: 'h-5 w-5',
+      xl: 'h-6 w-6',
+    },
+  },
+  defaultVariants: {
+    size: 'default',
+  },
+});
+
+interface IconProps extends VariantProps<typeof iconVariants> {
+  name: keyof typeof icons;
+  className?: string;
+}
+
+const icons = {
+  check: Check,
+  close: X,
+  alert: AlertCircle,
+  info: Info,
+} as const;
+
+export const Icon: React.FC<IconProps> = ({ name, size, className }) => {
+  const IconComponent = icons[name];
+  return <IconComponent className={cn(iconVariants({ size }), className)} />;
+};
+```
+
+## Key Principles for UI Components
+
+1. **Always use `React.forwardRef`** - Essential for Radix UI and ref forwarding
+2. **CVA for variants** - Consistent, type-safe variant management
+3. **cn() utility** - Merge Tailwind classes properly
+4. **Display names** - Always set for debugging
+5. **Extend HTML attributes** - When wrapping native elements
+6. **asChild prop** - Support Radix Slot for polymorphism
+7. **Default variants** - Always provide sensible defaults
+8. **Accessibility first** - ARIA labels, keyboard navigation, sr-only text
+9. **Animation states** - Use data-[state] for Radix components
+10. **Export variants** - Allow consumers to reuse variant logic
+
+## File Structure for New UI Component
+
+```
+components/ui/
+├── button.tsx           # Component implementation
+└── index.ts            # Barrel export
+```
+
+```typescript
+// components/ui/index.ts
+export { Button, buttonVariants } from './button';
+export { Card, CardHeader, CardTitle, CardContent } from './card';
+```
+
+## Testing UI Components
+
+```typescript
+// Make components testable
+interface ButtonProps {
+  testId?: string;
+}
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ testId, ...props }, ref) => (
+    <button
+      ref={ref}
+      data-testid={testId}
+      {...props}
+    />
+  )
+);
+
+// Usage in tests
+<Button testId="submit-button">Submit</Button>
+```

@@ -1,0 +1,53 @@
+---
+description: Code quality standards and best practices
+globs: **/*.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+
+# Code Quality Standards
+
+## Naming Conventions
+
+- **Components**: PascalCase (`UserProfile`, `LoginForm`)
+- **Variables/Functions**: camelCase (`userName`, `fetchData`)
+- **Constants**: UPPER_SNAKE_CASE (`API_URL`, `MAX_RETRIES`)
+- **Types/Interfaces**: PascalCase (`UserData`, `ApiResponse`)
+- **Files**: kebab-case or PascalCase for components ( `UserProfile.tsx`)
+
+## Error Handling
+
+```typescript
+// ✅ GOOD - Proper error handling
+try {
+  const data = await fetchData();
+  return data;
+} catch (error) {
+  console.error('Failed to fetch data:', error);
+  throw new Error('Data fetch failed', { cause: error });
+}
+
+// ❌ BAD - Silent failures
+try {
+  await fetchData();
+} catch (e) {}
+```
+
+## Performance
+
+- Use `React.memo()` for expensive components
+- Lazy load routes: `const Page = lazy(() => import('./Page'))`
+- Memoize expensive calculations with `useMemo()`
+- Memoize callbacks with `useCallback()` when passed to child components
+
+## Accessibility
+
+```typescript
+// ✅ GOOD - Semantic HTML and ARIA labels
+<button aria-label="Close dialog" onClick={onClose}>
+  <X className="h-4 w-4" />
+  <span className="sr-only">Close</span>
+</button>
+
+// Ensure keyboard navigation works
+// Use semantic HTML (button, nav, header, main, etc.)
+```

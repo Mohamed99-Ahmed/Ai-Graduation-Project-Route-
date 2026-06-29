@@ -1,0 +1,57 @@
+---
+description: File and folder organization standards
+globs: **/*
+alwaysApply: true
+---
+
+# File Organization
+
+## Screen-Based Structure
+
+```
+src/
+├── components/
+│   ├── ui/              # shadcn/ui components
+│   └── shared/          # Shared components
+├── screens/
+│   ├── Auth/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   └── store/
+│   ├── Dashboard/
+│   ├── Settings/
+│   └── Connections/
+├── lib/                 # Utilities, configs
+├── hooks/               # Global custom hooks
+├── types/               # Global type definitions
+├── graphql/             # GraphQL operations
+└── contexts/            # React contexts & store
+```
+
+## File Naming
+
+- **Components**: `ComponentName.tsx` 
+- **Hooks**: `use-hook-name.ts`
+- **Types**: `ComponentName.types.ts`
+- **Utils**: `utils.ts` or `helper-name.ts`
+- **GraphQL**: `queries.ts`, `mutations.ts`, `fragments.ts`
+
+## Co-location
+
+Keep related files together:
+```
+UserProfile/
+├── UserProfile.tsx
+├── UserProfile.types.ts
+├── use-user-profile.ts
+└── user-queries.ts
+```
+
+## Barrel Exports
+
+Use `index.ts` for clean imports:
+```typescript
+// components/ui/index.ts
+export { Button } from './button';
+export { Dialog } from './dialog';
+```
