@@ -7,6 +7,7 @@ See [docs/README.md](./docs/README.md) for the index.
 ## Quick Links
 
 - [Overview](./docs/overview.md)
+- [Phases](./docs/phases.md)
 - [Features](./docs/features.md)
 - [Tech Stack](./docs/tech-stack.md)
 - [Architecture](./docs/architecture.md)

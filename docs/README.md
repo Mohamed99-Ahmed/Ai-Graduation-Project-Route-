@@ -3,6 +3,7 @@
 | Document | Description |
 | -------- | ----------- |
 | [Overview](./overview.md) | Project goals and scope |
+| [Phases](./phases.md) | Implementation roadmap (8 phases) |
 | [Features](./features.md) | Core and advanced features |
 | [Dataset](./dataset.md) | News sources and websites |
 | [Architecture](./architecture.md) | End-to-end pipeline flow |
