@@ -1,5 +1,7 @@
 # AI News Assistant (RAG) — Documentation
 
+Project setup and local development: see the [root README](../README.md).
+
 | Document | Description |
 | -------- | ----------- |
 | [Overview](./overview.md) | Project goals and scope |

@@ -1,0 +1,36 @@
+{
+  "name": "lumio-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "setup:db": "tsx src/scripts/setup-indexes.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^5.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.5.2",
+    "graphql": "^16.10.0",
+    "helmet": "^8.2.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.12.1",
+    "nodemailer": "^9.0.1",
+    "nodemon": "^3.1.14",
+    "stripe": "^22.3.0",
+    "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
